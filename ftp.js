@@ -51,11 +51,14 @@ module.exports = function (RED) {
     this.ftpConfig = RED.nodes.getNode(this.ftp);
 
     if (this.ftpConfig) {
-      var conn = new ftp();
+
       var node = this;
       node.on('input', function (msg) {
+	var conn = new ftp();
+	var payload = msg.payload;
         var filename = node.filename || msg.filename || '';
         var localFilename = node.localFilename || msg.localFilename || '';
+	var path = msg.path;
         this.sendMsg = function (err, result) {
           if (err) {
             node.error(err.toString());
@@ -80,13 +83,25 @@ module.exports = function (RED) {
         conn.on('ready', function () {
           switch (node.operation) {
             case 'list':
-              conn.list(node.sendMsg);
+	      if(path){
+                conn.list(path, node.sendMsg);
+	      }
+	      else{
+		conn.list(node.sendMsg);
+	      }
               break;
             case 'get':
               conn.get(filename, node.sendMsg);
               break;
             case 'put':
-              conn.put(localFilename, filename, node.sendMsg);
+	      if(!localFilename){
+ 	        var buf = Buffer.from(payload, 'utf8');
+		conn.put(buf, filename, node.sendMsg);
+	      }
+	      else{
+		conn.put(localFilename, filename, node.sendMsg);
+              }
+              
               break;
             case 'delete':
               conn.delete(filename, node.sendMsg);
