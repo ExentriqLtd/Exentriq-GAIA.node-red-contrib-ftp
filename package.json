@@ -5,11 +5,11 @@
   "author": "Calogero Crapanzano <calosan@libero.it>",
   "keywords": [ "node-red" ],
   "dependencies": {
-    "avsc": "*"
+    "ftp": "^0.3.8"
   },
   "node-red"     : {
         "nodes": {
-            "ftp in": "ftp.js"
+            "ftp": "ftp.js"
         }
     }
 }
