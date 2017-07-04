@@ -1,0 +1,15 @@
+{
+  "name": "node-red-contrib-ftp",
+  "version": "1.0.0",
+  "description": "A Node-RED node to FTP Server.",
+  "author": "Calogero Crapanzano <calosan@libero.it>",
+  "keywords": [ "node-red" ],
+  "dependencies": {
+    "avsc": "*"
+  },
+  "node-red"     : {
+        "nodes": {
+            "ftp in": "ftp.js"
+        }
+    }
+}
