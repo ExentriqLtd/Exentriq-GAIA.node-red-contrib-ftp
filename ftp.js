@@ -58,7 +58,7 @@ module.exports = function (RED) {
 	    var conn = new ftp();
 	    var payload = msg.payload;
       var filename = node.filename || msg.filename || '';
-      var localFilename = node.localFilename || msg.localFilename || '';
+      var localFilename = node.localFilename || msg.localFilename;
 	    var path = msg.path;
       this.sendMsg = function (err, result) {
           if (err) {
@@ -68,7 +68,7 @@ module.exports = function (RED) {
           node.status({});
           var send_immediate = true;
           if (node.operation == 'get') {
-            if(localFilename && localFilename!=''){
+            if(localFilename){
               result.once('close', function() { conn.end(); });
               result.pipe(fs.createWriteStream(localFilename));
               msg.payload = 'Get operation successful. ' + localFilename;
