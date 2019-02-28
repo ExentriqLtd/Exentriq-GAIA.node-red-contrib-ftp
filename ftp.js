@@ -18,6 +18,7 @@ module.exports = function (RED) {
   'use strict';
   var ftp = require('ftp');
   var fs = require('fs');
+  var toString = require('stream-to-string');
 
   function FtpNode(n) {
     RED.nodes.createNode(this, n);
@@ -54,21 +55,34 @@ module.exports = function (RED) {
 
       var node = this;
       node.on('input', function (msg) {
-	var conn = new ftp();
-	var payload = msg.payload;
-        var filename = node.filename || msg.filename || '';
-        var localFilename = node.localFilename || msg.localFilename || '';
-	var path = msg.path;
-        this.sendMsg = function (err, result) {
+	    var conn = new ftp();
+	    var payload = msg.payload;
+      var filename = node.filename || msg.filename || '';
+      var localFilename = node.localFilename || msg.localFilename || '';
+	    var path = msg.path;
+      this.sendMsg = function (err, result) {
           if (err) {
             node.error(err.toString());
             node.status({ fill: 'red', shape: 'ring', text: 'failed' });
           }
           node.status({});
+          var send_immediate = true;
           if (node.operation == 'get') {
-            result.once('close', function() { conn.end(); });
-            result.pipe(fs.createWriteStream(localFilename));
-            msg.payload = 'Get operation successful. ' + localFilename;
+            if(localFilename && localFilename!=''){
+              result.once('close', function() { conn.end(); });
+              result.pipe(fs.createWriteStream(localFilename));
+              msg.payload = 'Get operation successful. ' + localFilename;
+            }
+            else{
+              send_immediate = false;
+              toString(result, function (err, text) {
+                msg.payload=text;
+                msg.filename = filename;
+                node.send(msg);
+              })
+            
+            }
+            
           } else if (node.operation == 'put') {
             conn.end();
             msg.payload = 'Put operation successful.';
@@ -76,32 +90,33 @@ module.exports = function (RED) {
             conn.end();
             msg.payload = result;
           }
-          msg.filename = filename;
-          msg.localFilename = localFilename;
-          node.send(msg);
+          if(send_immediate){
+            msg.filename = filename;
+            msg.localFilename = localFilename;
+            node.send(msg);
+          }
         };
         conn.on('ready', function () {
           switch (node.operation) {
             case 'list':
-	      if(path){
+              if(path){
                 conn.list(path, node.sendMsg);
-	      }
-	      else{
-		conn.list(node.sendMsg);
-	      }
+              }
+              else{
+                conn.list(node.sendMsg);
+              }
               break;
-            case 'get':
-              conn.get(filename, node.sendMsg);
+              case 'get':
+                conn.get(filename, node.sendMsg);
               break;
             case 'put':
-	      if(!localFilename){
- 	        var buf = Buffer.from(payload, 'utf8');
-		conn.put(buf, filename, node.sendMsg);
-	      }
-	      else{
-		conn.put(localFilename, filename, node.sendMsg);
+              if(!localFilename){
+                var buf = Buffer.from(payload, 'utf8');
+                conn.put(buf, filename, node.sendMsg);
               }
-              
+              else{
+                  conn.put(localFilename, filename, node.sendMsg);
+              }
               break;
             case 'delete':
               conn.delete(filename, node.sendMsg);
