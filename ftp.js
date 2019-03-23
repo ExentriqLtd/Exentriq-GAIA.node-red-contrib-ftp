@@ -78,6 +78,7 @@ module.exports = function (RED) {
               toString(result, function (err, text) {
                 msg.payload=text;
                 msg.filename = filename;
+                conn.end();
                 node.send(msg);
               })
             
